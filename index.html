@@ -92,7 +92,7 @@ audio {
 
 <script>
 const CLOUD_NAME = "dzbpzdqao";
-const UPLOAD_PRESET = "YOUR_UPLOAD_PRESET";
+const UPLOAD_PRESET = "akmal_pending_9x7";
 
 // ================= UPLOAD =================
 async function uploadAudio() {
@@ -105,12 +105,14 @@ async function uploadAudio() {
   }
 
   const ext = file.name.split('.').pop();
-  const renamedFile = new File([file], author.toLowerCase() + "." + ext, { type: file.type });
+  const filename = author.toLowerCase();
+
+  const renamedFile = new File([file], filename + "." + ext, { type: file.type });
 
   const formData = new FormData();
   formData.append("file", renamedFile);
   formData.append("upload_preset", UPLOAD_PRESET);
-  formData.append("public_id", author.toLowerCase());
+  formData.append("public_id", filename);
 
   try {
     await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
@@ -118,8 +120,10 @@ async function uploadAudio() {
       body: formData
     });
 
-    alert("Upload berhasil 🔥");
-    loadAudios();
+    // ⚡ langsung tampil (instant)
+    addToList(filename, URL.createObjectURL(file), true);
+
+    loadAudios(); // sync ulang
 
   } catch (err) {
     alert("Upload gagal");
@@ -127,23 +131,22 @@ async function uploadAudio() {
 }
 
 // ================= RENDER =================
-function addToList(name, url) {
+function addToList(name, url, isNew = false) {
   const div = document.createElement("div");
   div.className = "audio-card";
 
   div.innerHTML = `
-    <strong>${name}</strong>
+    <strong>${name} ${isNew ? "🔥" : ""}</strong>
     <audio controls src="${url}"></audio>
     <a class="download" href="${url}" download="${name}.mp3">Download</a>
   `;
 
-  document.getElementById("list").appendChild(div);
+  document.getElementById("list").prepend(div);
 }
 
 // ================= LOAD =================
 async function loadAudios() {
   const list = document.getElementById("list");
-  list.innerHTML = "Loading...";
 
   try {
     const res = await fetch("/api/audio");
@@ -159,7 +162,9 @@ async function loadAudios() {
     data
       .sort((a, b) => new Date(b.created) - new Date(a.created))
       .slice(0, 25)
-      .forEach(item => addToList(item.name, item.url));
+      .forEach(item => {
+        addToList(item.name, item.url);
+      });
 
   } catch (err) {
     list.innerHTML = "Gagal load audio";
@@ -169,8 +174,8 @@ async function loadAudios() {
 // auto load
 loadAudios();
 
-// optional auto refresh
-setInterval(loadAudios, 10000);
+// refresh tiap 3 detik
+setInterval(loadAudios, 3000);
 </script>
 
 </body>
