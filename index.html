@@ -102,9 +102,9 @@ audio {
 
 <script>
 const CLOUD_NAME = "dzbpzdqao";
-const UPLOAD_PRESET = "akmal_pending_9x7";
+const UPLOAD_PRESET = "YOUR_UPLOAD_PRESET";
 
-// Upload audio
+// ================= UPLOAD =================
 async function uploadAudio() {
   const author = document.getElementById("author").value.trim();
   const fileInput = document.getElementById("file");
@@ -115,7 +115,6 @@ async function uploadAudio() {
     return;
   }
 
-  // Rename file
   const ext = file.name.split('.').pop();
   const newFileName = author.toLowerCase() + "." + ext;
   const renamedFile = new File([file], newFileName, { type: file.type });
@@ -123,25 +122,26 @@ async function uploadAudio() {
   const formData = new FormData();
   formData.append("file", renamedFile);
   formData.append("upload_preset", UPLOAD_PRESET);
-  formData.append("public_id", author.toLowerCase()); // biar jadi cecep.mp3
+  formData.append("public_id", author.toLowerCase());
 
   try {
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
+    await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
       method: "POST",
       body: formData
     });
 
-    const data = await res.json();
-    addToList(author, data.secure_url);
-
     alert("Upload berhasil 🔥");
+
+    // reload list biar update ke semua
+    loadAudios();
+
   } catch (err) {
     console.error(err);
     alert("Upload gagal");
   }
 }
 
-// Tambah ke UI
+// ================= RENDER =================
 function addToList(name, url) {
   const list = document.getElementById("list");
 
@@ -154,8 +154,34 @@ function addToList(name, url) {
     <a class="download" href="${url}" download="${name}.mp3">Download</a>
   `;
 
-  list.prepend(div);
+  list.appendChild(div);
 }
+
+// ================= LOAD =================
+async function loadAudios() {
+  const list = document.getElementById("list");
+  list.innerHTML = "Loading...";
+
+  try {
+    const res = await fetch("/api/audio");
+    const data = await res.json();
+
+    list.innerHTML = "";
+
+    data
+      .sort((a, b) => new Date(b.created) - new Date(a.created)) // terbaru dulu
+      .forEach(item => {
+        addToList(item.name, item.url);
+      });
+
+  } catch (err) {
+    console.error(err);
+    list.innerHTML = "Gagal load audio";
+  }
+}
+
+// auto jalan saat buka
+loadAudios();
 </script>
 
 </body>
