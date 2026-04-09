@@ -7,7 +7,7 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/resources/video?max_results=100`,
+      `https://api.cloudinary.com/v1_1/${cloudName}/resources/video?type=upload&max_results=100`,
       {
         headers: {
           Authorization: `Basic ${auth}`
@@ -17,11 +17,13 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    const audios = (data.resources || []).map(item => ({
-      name: item.public_id,
-      url: item.secure_url,
-      created: item.created_at
-    }));
+    const audios = (data.resources || [])
+      .filter(item => item.format === "mp3") // cuma mp3
+      .map(item => ({
+        name: item.public_id,
+        url: item.secure_url,
+        created: item.created_at
+      }));
 
     return res.status(200).json(audios);
 
