@@ -23,7 +23,6 @@ body {
 
 h1 {
   text-align: center;
-  font-weight: 600;
   margin-bottom: 30px;
 }
 
@@ -32,7 +31,6 @@ h1 {
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 20px;
-  box-shadow: 0 0 20px rgba(255,255,255,0.05);
 }
 
 input, button {
@@ -41,7 +39,6 @@ input, button {
   margin-top: 10px;
   border-radius: 10px;
   border: none;
-  outline: none;
 }
 
 input {
@@ -50,15 +47,10 @@ input {
 }
 
 button {
-  background: #ffffff;
+  background: #fff;
   color: #000;
   font-weight: 600;
   cursor: pointer;
-  transition: 0.2s;
-}
-
-button:hover {
-  opacity: 0.8;
 }
 
 .audio-card {
@@ -72,10 +64,10 @@ audio {
 
 .download {
   display: inline-block;
-  margin-top: 10px;
+  margin-top: 8px;
   font-size: 14px;
-  text-decoration: none;
   color: #aaa;
+  text-decoration: none;
 }
 </style>
 </head>
@@ -85,7 +77,6 @@ audio {
 <div class="container">
   <h1>🎧 Audio Drop</h1>
 
-  <!-- Upload -->
   <div class="card">
     <h3>Upload Audio</h3>
     <input type="text" id="author" placeholder="Nama DJ / Author">
@@ -93,10 +84,9 @@ audio {
     <button onclick="uploadAudio()">Upload</button>
   </div>
 
-  <!-- List -->
   <div class="card">
-    <h3>Audio List</h3>
-    <div id="list"></div>
+    <h3>Audio List (25 terbaru)</h3>
+    <div id="list">Loading...</div>
   </div>
 </div>
 
@@ -107,6 +97,84 @@ const UPLOAD_PRESET = "YOUR_UPLOAD_PRESET";
 // ================= UPLOAD =================
 async function uploadAudio() {
   const author = document.getElementById("author").value.trim();
+  const file = document.getElementById("file").files[0];
+
+  if (!author || !file) {
+    alert("Isi semua dulu bro");
+    return;
+  }
+
+  const ext = file.name.split('.').pop();
+  const renamedFile = new File([file], author.toLowerCase() + "." + ext, { type: file.type });
+
+  const formData = new FormData();
+  formData.append("file", renamedFile);
+  formData.append("upload_preset", UPLOAD_PRESET);
+  formData.append("public_id", author.toLowerCase());
+
+  try {
+    await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
+      method: "POST",
+      body: formData
+    });
+
+    alert("Upload berhasil 🔥");
+    loadAudios();
+
+  } catch (err) {
+    alert("Upload gagal");
+  }
+}
+
+// ================= RENDER =================
+function addToList(name, url) {
+  const div = document.createElement("div");
+  div.className = "audio-card";
+
+  div.innerHTML = `
+    <strong>${name}</strong>
+    <audio controls src="${url}"></audio>
+    <a class="download" href="${url}" download="${name}.mp3">Download</a>
+  `;
+
+  document.getElementById("list").appendChild(div);
+}
+
+// ================= LOAD =================
+async function loadAudios() {
+  const list = document.getElementById("list");
+  list.innerHTML = "Loading...";
+
+  try {
+    const res = await fetch("/api/audio");
+    const data = await res.json();
+
+    list.innerHTML = "";
+
+    if (!data.length) {
+      list.innerHTML = "Belum ada audio 😢";
+      return;
+    }
+
+    data
+      .sort((a, b) => new Date(b.created) - new Date(a.created))
+      .slice(0, 25)
+      .forEach(item => addToList(item.name, item.url));
+
+  } catch (err) {
+    list.innerHTML = "Gagal load audio";
+  }
+}
+
+// auto load
+loadAudios();
+
+// optional auto refresh
+setInterval(loadAudios, 10000);
+</script>
+
+</body>
+</html>  const author = document.getElementById("author").value.trim();
   const fileInput = document.getElementById("file");
   const file = fileInput.files[0];
 
