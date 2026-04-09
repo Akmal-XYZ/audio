@@ -3,7 +3,6 @@ export default async function handler(req, res) {
   const apiKey = process.env.API_KEY;
   const apiSecret = process.env.API_SECRET;
 
-  // basic auth (Cloudinary API)
   const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
 
   try {
@@ -18,10 +17,10 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // ambil & rapihin data audio
     const audios = data.resources.map(item => ({
       name: item.public_id,
-      url: item.secure_url
+      url: item.secure_url,
+      created: item.created_at
     }));
 
     return res.status(200).json(audios);
